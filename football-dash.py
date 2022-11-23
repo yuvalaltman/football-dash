@@ -782,7 +782,14 @@ def clear_player_search(position, n_clicks):
     [Input("crossfilter-position", "value")]
 )
 def update_main_title(position):
-    return main_title.replace("Players", positions_long[position])
+    new_txt = html.P([
+        html.Span(
+            positions_long[position],
+            style = {"color": get_player_color(position, 0)}
+        ),
+        " " + main_title.split(" ", 1)[1]
+    ])
+    return new_txt
 
 # -------------------------------------------------------------------------------------
 
