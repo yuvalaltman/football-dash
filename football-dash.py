@@ -68,6 +68,7 @@ cluster_labels_groups_filename = "https://raw.githubusercontent.com/yuvalaltman/
 country_placeholder = "<country>"
 flag_img_template = "https://raw.githubusercontent.com/ninjanye/flag-icon-css/cc4ba085e285f449cd12f0babe4387e169932447/flags/4x3/"+country_placeholder+".svg"
 countries_filename = "https://raw.githubusercontent.com/yuvalaltman/hostedFiles/main/countries.json"
+countries_fullname_filename = "https://raw.githubusercontent.com/yuvalaltman/hostedFiles/main/countries_fullname.json"
 
 main_title = "Players from Europe's Top 5 Leagues"
 
@@ -121,6 +122,7 @@ cluster_labels_groups = read_json(cluster_labels_groups_filename, fmt="list")
 data_prcnt_groups = read_json(data_prcnt_groups_filename, fmt="dict")
 dff = dff = pd.read_csv(dff_filename)
 countries = read_json_inner(countries_filename)
+countries_fullname = read_json_inner(countries_fullname_filename)
 
 # =====================================================================
 # DASH APP
@@ -258,7 +260,38 @@ player_search = dcc.Dropdown(
     className="m-1",
 )
 
-# -------------------------------------------------------------------------------------    
+# -------------------------------------------------------------------------------------  
+
+countries_all_str = "All"
+countries_fullname[countries_all_str] = countries_all_str
+country_search_placeholder = countries_all_str
+
+def get_country_search_options(df):
+    return [
+        {
+            "label": html.Div(
+                [
+                    html.Img(src=flag_img_template.replace(country_placeholder, countries[i]), height=20),
+                    html.Div(countries_fullname[i], style={'font-size': 15, 'padding-left': 10}),
+                ],
+                style={'display': 'flex', 'align-items': 'center', 'justify-content': 'center'}
+            ),
+            "value": i
+        }
+        if i in countries.keys()
+        else {"label": countries_fullname[i], "value": i}
+        for i in np.insert(sorted(df["nationality"].unique()), 0, countries_all_str)
+    ]
+
+country_search = dcc.Dropdown(
+    id="country-search",
+    options=get_country_search_options(dff),
+    value=countries_all_str,
+    placeholder=country_search_placeholder,
+    clearable=False
+)
+
+# -------------------------------------------------------------------------------------  
 
 filters = html.Div(
     [
@@ -317,7 +350,14 @@ filters = html.Div(
                         inline=True
                     )
                 ]
-            )
+            ),
+            html.Div(
+                [
+                    html.Br(),
+                    dbc.Label("Nationality:"),
+                    country_search
+                ]
+            ),
         ],
             id="filters",
             title="Options",
@@ -457,17 +497,19 @@ app.clientside_callback(
 @app.callback(
     [
         Output("crossfilter-scatter", "figure"),
-        Output("player-search", "options")
+        Output("player-search", "options"),
+        Output("country-search", "options")
     ],
     [
         Input("crossfilter-position", "value"),
         Input("crossfilter-league", "value"),
         Input("age-range-slider", "value"),
         Input("viewport-container", "children"),
-        Input("player-search", "value")
+        Input("player-search", "value"),
+        Input("country-search", "value")
     ]
 )
-def update_graph(position, league, ages, screen_width, player):
+def update_graph(position, league, ages, screen_width, player, country):
     triggered_id = ctx.triggered_id
     
     fig = go.Figure()
@@ -481,6 +523,8 @@ def update_graph(position, league, ages, screen_width, player):
     dff_f = dff_f[(dff_f["age"]>=ages[0]) & (dff_f["age"]<=ages[1])]
     if not league.startswith("All "):
         dff_f = dff_f[dff_f["league"] == league]
+    if not country == countries_all_str:
+        dff_f = dff_f[dff_f["nationality"] == country]
     
     ind_player = None
     player_cluster = None
@@ -541,23 +585,24 @@ def update_graph(position, league, ages, screen_width, player):
             ),
         )
                 
-        fig.add_annotation(
-            {
-                "font":
+        if np.sum(dff_f["cluster"] == i)>1:
+            fig.add_annotation(
                 {
-                    "color": text_color["light_mode"],
-                    "size": font_size["cluster_label"]["small"] if is_small_screen(screen_width) else font_size["cluster_label"]["large"],
-                },
-                "x": dff_f["x"][dff_f["cluster"] == i].mean(),
-                "y": dff_f["y"][dff_f["cluster"] == i].mean(),
-                "xref": "x",
-                "yref": "y",
-                "showarrow": False,
-                "text": cluster_labels_groups[position][i],
-                "textangle": 0,
-                "opacity": 0.3
-            }
-        )
+                    "font":
+                    {
+                        "color": text_color["light_mode"],
+                        "size": font_size["cluster_label"]["small"] if is_small_screen(screen_width) else font_size["cluster_label"]["large"],
+                    },
+                    "x": dff_f["x"][dff_f["cluster"] == i].mean(),
+                    "y": dff_f["y"][dff_f["cluster"] == i].mean(),
+                    "xref": "x",
+                    "yref": "y",
+                    "showarrow": False,
+                    "text": cluster_labels_groups[position][i],
+                    "textangle": 0,
+                    "opacity": 0.3
+                }
+            )
             
     if triggered_id == "player-search":
         if (idx_player is not None) and (player_cluster is not None):
@@ -592,7 +637,7 @@ def update_graph(position, league, ages, screen_width, player):
         plot_bgcolor = "rgba(0,0,0,0)"
     )
     
-    return fig, dff_f["player"]
+    return fig, dff_f["player"], get_country_search_options(dff_f)
     
 # -------------------------------------------------------------------------------------
 
