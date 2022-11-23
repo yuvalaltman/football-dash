@@ -387,6 +387,14 @@ app.layout = dbc.Container([
     html.Div(id="viewport-container", hidden=True),
     # **************************************************
     
+    dbc.Tooltip(
+        html.P([
+            "You can change the position in ",
+            html.Span("Options", style={"fontStyle": "italic"})
+        ]),
+        target="tooltip-target"
+    ),
+    
     dbc.Row([
         dbc.Col([
             html.H4(
@@ -397,7 +405,7 @@ app.layout = dbc.Container([
                     "fontWeight": "bold",
                     "fontStretch": "expanded"
                 }
-            )
+            ),
         ])
     ],
         justify="center"
@@ -830,6 +838,7 @@ def update_main_title(position):
     new_txt = html.P([
         html.Span(
             positions_long[position],
+            id="tooltip-target",
             style = {"color": get_player_color(position, 0)}
         ),
         " " + main_title.split(" ", 1)[1]
