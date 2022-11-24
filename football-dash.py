@@ -405,7 +405,7 @@ app.layout = dbc.Container([
                     "fontWeight": "bold",
                     "fontStretch": "expanded"
                 }
-            ),
+            )
         ])
     ],
         justify="center"
@@ -485,7 +485,48 @@ app.layout = dbc.Container([
             ),
         ], xs=10, align="center")
     ], justify="center"),
+    
+    dbc.Row([
+        dbc.Col([
+            html.Div([
+                dbc.Button(
+                    "About this graph's variables",
+                    color="secondary",
+                    id="open-about-radarVars",
+                    n_clicks=0,
+                    size="sm",
+                    className="m-1"
+                ),
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader("The Variables in Player Graph"),
+                        dbc.ModalBody(
+                            html.Div([html.P([""])]),
+                            id="about-radarVars-modalBody"
+                        ),
+                        dbc.ModalFooter(dbc.Button("Close", id="close-about-radarVars", className="ms-auto", n_clicks=0))
+                    ],
+                    id="about-radarVars",
+                    is_open=False,
+                    scrollable=True
+                )
+            ])
+        ], align="center")
+    ], justify="center"),
+    
 ], fluid=True)
+
+# -------------------------------------------------------------------------------------
+
+@app.callback(
+    Output("about-radarVars", "is_open"),
+    [Input("open-about-radarVars", "n_clicks"), Input("close-about-radarVars", "n_clicks")],
+    [State("about-radarVars", "is_open")],
+)
+def toggle_modal_radar(n1, n2, is_open):
+    if n1 or n2:
+        return not is_open
+    return is_open
 
 # -------------------------------------------------------------------------------------
 # get the user screen width as a clientside function
@@ -593,7 +634,7 @@ def update_graph(position, league, ages, screen_width, player, country):
             ),
         )
                 
-        if np.sum(dff_f["cluster"] == i)>1:
+        if np.sum(dff_f["cluster"] == i)>0:
             fig.add_annotation(
                 {
                     "font":
@@ -844,6 +885,64 @@ def update_main_title(position):
         " " + main_title.split(" ", 1)[1]
     ])
     return new_txt
+
+# -------------------------------------------------------------------------------------
+
+# change the text of the "About this graph's variables" modal, based on the displayed position
+
+radar_vars_info_txt = {
+    "tackles_plus_interceptions_per90": "tackling an opponent, and intercepting the ball",
+    "clearances_per90": "clearing the ball from a dangerous position",
+    "tackles_won_per90": "how many tackles by the player ended successfuly",
+    "ball_recoveries_per90": "stealing the ball from an opponent",
+    "aerials_won_per90": "winning the ball in the air",
+    "pressures_per90": "pressing the opponent",
+    "pressures_mid_3rd_per90": "pressing the opponent in the middle of the pitch",
+    "passes_completed_per90": "passes succussfuly arriving to a teammate",
+    "passes_completed_long_per90": "successful passes of over than 30 yards",
+    "crosses_into_penalty_area_per90": "attempts of passing the ball into the opponents box",
+    "progressive_passes_per90": "completed passes that move the ball towards the opponent's goal",
+    "carry_progressive_distance_per90": "distance that completed passes have traveled towards the opponent's goal",
+    "dribbles_completed_per90": "dribbles completed successfuly",
+    "sca_per90": "offensive actions directly leading to a shot, such as passes, dribbles and drawing fouls",
+    "gca_per90": "offensive actions directly leading to a goal, such as passes, dribbles and drawing fouls",
+    "assisted_shots_per90": "passes that directly lead to a shot",
+    "shots_total_per90": "shots at goal, excluding penalties",
+    "xg_per90": "expected goals",
+    "xa_per90": "expected assists",
+    "tackles_att_3rd_per90": "tackles in the attacking third of the pitch",
+    "passes_into_penalty_area_per90": "completed passes into the opposition's box",
+    "goals_per90": "goals scored",
+}
+
+@app.callback(
+    Output("about-radarVars-modalBody", "children"),
+    [Input("crossfilter-position", "value")]
+)
+def get_radar_vars_info_txt(position):
+    txt = []
+    ticklabels = [item for sublist in list(features_groups[position].values()) for item in sublist]
+    for tl in ticklabels:
+        key = tl.replace("_per90", "").replace("_", " ")
+        if key == "assisted shots":
+            key = "key passes"
+        val = radar_vars_info_txt[tl]
+        txt.append(
+            html.P(
+                [
+                    html.Span(
+                        key,
+                        style={
+                            "fontWeight": "bold",
+                            "fontStyle": "italic",
+                            "textDecoration": "underline"
+                        }
+                    ),
+                    ": " + val
+                ]
+            )
+        )
+    return html.Div(txt)
 
 # -------------------------------------------------------------------------------------
 
