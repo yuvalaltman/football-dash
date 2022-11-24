@@ -938,7 +938,7 @@ def get_radar_vars_info_txt(position):
                             "textDecoration": "underline"
                         }
                     ),
-                    ": " + val
+                    ": ", val
                 ]
             )
         )
