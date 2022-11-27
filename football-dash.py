@@ -276,10 +276,11 @@ def get_country_search_options(df):
                 ],
                 style={'display': 'flex', 'align-items': 'center', 'justify-content': 'center'}
             ),
-            "value": i
+            "value": i,
+            "search": countries_fullname[i]
         }
         if i in countries.keys()
-        else {"label": countries_fullname[i], "value": i}
+        else {"label": countries_fullname[i], "value": i, "search": countries_fullname[i]}
         for i in np.insert(sorted(df["nationality"].unique()), 0, countries_all_str)
     ]
 
