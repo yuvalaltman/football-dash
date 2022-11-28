@@ -568,7 +568,7 @@ def update_graph(position, league, ages, screen_width, player, country):
     marker_opacity = 0.8
     selected_marker_opacity = 0.9
     unselected_marker_opacity = 0.5*marker_opacity
-       
+           
     dff_f = dff[dff["position"] == position]
     dff_f = dff_f[(dff_f["age"]>=ages[0]) & (dff_f["age"]<=ages[1])]
     if not league.startswith("All "):
@@ -672,9 +672,8 @@ def update_graph(position, league, ages, screen_width, player, country):
                     unselected_marker_opacity=unselected_marker_opacity,
                     unselected_marker_size=int(0.75*ms),
                     selector={"name": oc}
-                )
-        
-            
+                )    
+    
     fig.update_layout(
         autosize = True,
         showlegend=False,
@@ -852,6 +851,22 @@ def update_player_radar(hoverData, clickData, player_search, position_opt, updat
 )
 def auto_change_player_update_prompt(screen_width):
     return "click" if is_small_screen(screen_width) else "hover"
+
+# -------------------------------------------------------------------------------------
+
+# remove modebar from graphs for small screens
+
+@app.callback(
+    [
+        Output("crossfilter-scatter", "config"),
+        Output("player-radar", "config")
+    ],
+    Input("viewport-container", "children")
+)
+def remove_modebar_small_screen(screen_width):
+    if is_small_screen(screen_width):
+        config_graph["displayModeBar"] = False
+    return config_graph, config_graph  
 
 # -------------------------------------------------------------------------------------
 
